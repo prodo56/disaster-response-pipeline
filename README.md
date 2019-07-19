@@ -18,7 +18,7 @@ Apart from Anaconda distribution of Python, this code should requires stopwords 
 In this project, I have applied Data Science skills to analyze disaster data from Figure Eight to build a model for an API that classifies disaster messages.
 
 
-###Project Components <a name="projectComponents"></a>
+### Project Components <a name="projectComponents"></a>
 There are three components in this project.
 
 1. ETL Pipeline
