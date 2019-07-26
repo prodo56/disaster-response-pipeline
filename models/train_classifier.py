@@ -25,7 +25,7 @@ def load_data(database_filepath):
     # load data from database
     engine = create_engine('sqlite:///'+database_filepath)
     df = pd.read_sql_table("clean_data",engine)
-    X = df[["message","genre"]]
+    X = df[["message"]]
     Y = df.drop(["id","message","original","genre"],axis=1).values
     category_names = list(df.columns)[4:]
     
@@ -35,32 +35,23 @@ def load_data(database_filepath):
 
 
 def build_model():
+    '''
+    Build the pipeline with all the parameters needed for training
+    
+    :return cv: GridCV object
+    '''
     pipeline = Pipeline([('text_processing', FeatureUnion([
         ('message_processing', Pipeline([
             ('select_messages', ColumnSelector(columns = ['message'])),
-            ('vect', CountVectorizer(tokenizer = tokenize)),
+            ('vect', CountVectorizer(tokenizer = tokenize,max_features=5000)),
             ('tfidf', TfidfTransformer())
-        ])),
-
-        ('genre', Pipeline([
-            ('select_genre', ColumnSelector(columns = ['genre'])),
-            ('onehot', Onehotencoder())
         ]))
     ])),
     ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ])
     parameters = {
         'text_processing__message_processing__vect__ngram_range': ((1, 1), (1, 2)),
-        'text_processing__message_processing__vect__max_df': (0.5, 0.75, 1.0),
-        'text_processing__message_processing__vect__max_features': (None, 5000),
-        'text_processing__message_processing__tfidf__use_idf': (True, False),
-        'clf__estimator__n_estimators': [50, 100],
-        'clf__estimator__min_samples_split': [2, 3, 4],
-        'text_processing__transformer_weights': (
-            {'message_processing': 1, 'genre': 0.5},
-            {'message_processing': 0.5, 'genre': 1},
-            {'message_processing': 0.8, 'genre': 1},
-        )
+        'clf__estimator__n_estimators': [50, 100]
     }
 
     cv = GridSearchCV(pipeline, param_grid=parameters,n_jobs=10,verbose=2)
@@ -68,6 +59,14 @@ def build_model():
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    '''
+    Evalute the trained model by looking at the classification report
+    
+    :param model: Trained model
+    :param X_test: X_test dataset
+    :param Y_test: Y_test labels
+    :param category_names: category_names of all the messages in the test data
+    '''
     Y_pred = model.predict(X_test)
     for column in range(Y_test.shape[1]):
         print("Column name: {}".format(category_names[column]))
@@ -75,8 +74,7 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
-    
-    # store the model as pickle object
+  # store the model as pickle object
     try:
         joblib.dump(model, model_filepath)
 #         pickle.dump(model, open(model_filepath, 'wb'))
