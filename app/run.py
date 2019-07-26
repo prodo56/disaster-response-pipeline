@@ -12,11 +12,11 @@ app = Flask(__name__)
 
 
 # load data
-engine = create_engine('sqlite:///../data/DisasterResponse.db ')
-df = pd.read_sql_table('clean_data', engine)
+engine = create_engine('sqlite:///data/DisasterResponse.db')
+df = pd.read_sql_table("clean_data", engine)
 
 # load model
-model = joblib.load("../models/classifier.pkl")
+model = joblib.load("models/classifier.pkl")
 
 
 # index webpage displays cool visuals and receives user input text for model
@@ -29,9 +29,29 @@ def index():
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
     
+    top_10_categories_counts = df.drop(["id","message","original","genre"],axis=1).sum().sort_values(ascending=False).head(10)
+    top_10_categories_names = list(top_10_categories_counts.index)
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
+        {
+            'data': [
+                Bar(
+                    x=top_10_categories_names,
+                    y=top_10_categories_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Top 10 message categories',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Categories"
+                }
+            }
+        },
         {
             'data': [
                 Bar(
@@ -67,7 +87,7 @@ def go():
     query = request.args.get('query', '') 
 
     # use model to predict classification for query
-    classification_labels = model.predict([query])[0]
+    classification_labels = model.predict(pd.DataFrame([query],columns=['message']))[0]
     classification_results = dict(zip(df.columns[4:], classification_labels))
 
     # This will render the go.html Please see that file. 
